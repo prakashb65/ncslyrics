@@ -21,21 +21,21 @@ const PresentationPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`/api/lyrics/${id}`);
+        setCurrentSection(null);
         
+        const response = await fetch(`/api/lyrics/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch lyrics');
         }
         
         const data = await response.json();
-        if (!data) {
+        if (!data || !data.content) {
           throw new Error('No lyrics found');
         }
         
         setCurrentSection(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
-        setCurrentSection(null);
       } finally {
         setIsLoading(false);
       }
