@@ -1,22 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 
 interface Section {
-  type: string;
-  content: string;
+  id: number;
+  // Add other section properties as needed
 }
 
 const PresentationPage = () => {
+  const router = useRouter();
+  const { id } = router.query;
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
 
   useEffect(() => {
-    window.electron?.receive('update-section', (section) => {
-      setCurrentSection(section);
-    });
+    // Check if we're in an Electron environment
+    const isElectron = typeof window !== 'undefined' && 
+      window !== null && 
+      'electron' in window;
 
-    return () => {
-      window.electron?.removeAllListeners('update-section');
-    };
+    if (isElectron) {
+      // Only add electron listener if we're in Electron environment
+      (window as any).electron?.receive('update-section', (sectionData: Section) => {
+        setCurrentSection(sectionData);
+      });
+    }
   }, []);
 
   return (
@@ -53,7 +60,7 @@ const PresentationPage = () => {
             textAlign: 'center',
             maxWidth: '90%'
           }}>
-            {currentSection.content}
+            {/* Add your presentation content here */}
           </div>
         ) : (
           <div style={{ fontSize: '2rem', opacity: 0.5 }}>
