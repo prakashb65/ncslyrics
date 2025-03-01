@@ -4,7 +4,7 @@ import Head from 'next/head';
 
 interface Section {
   id: number;
-  // Add other section properties as needed
+  content: string;
 }
 
 const PresentationPage = () => {
@@ -13,17 +13,7 @@ const PresentationPage = () => {
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
 
   useEffect(() => {
-    // Check if we're in an Electron environment
-    const isElectron = typeof window !== 'undefined' && 
-      window !== null && 
-      'electron' in window;
-
-    if (isElectron) {
-      // Only add electron listener if we're in Electron environment
-      (window as any).electron?.receive('update-section', (sectionData: Section) => {
-        setCurrentSection(sectionData);
-      });
-    }
+    // Add any web-specific initialization here if needed
   }, []);
 
   return (
@@ -60,7 +50,7 @@ const PresentationPage = () => {
             textAlign: 'center',
             maxWidth: '90%'
           }}>
-            {/* Add your presentation content here */}
+            {currentSection.content}
           </div>
         ) : (
           <div style={{ fontSize: '2rem', opacity: 0.5 }}>
