@@ -11,16 +11,38 @@ const PresentationPage = () => {
   const router = useRouter();
   const { id } = router.query;
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Web-specific initialization
   useEffect(() => {
-    // Add web functionality here if needed
-  }, []);
+    const fetchLyrics = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch(`/api/lyrics/${id}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch lyrics');
+        }
+        
+        const data = await response.json();
+        setCurrentSection(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLyrics();
+  }, [id]);
 
   return (
     <>
       <Head>
-        <title>Presentation Mode</title>
+        <title>Presentation Mode | {currentSection?.content || 'Loading...'}</title>
         <style>{`
           body {
             margin: 0;
@@ -42,7 +64,15 @@ const PresentationPage = () => {
           padding: '2rem'
         }}
       >
-        {currentSection ? (
+        {error ? (
+          <div style={{ fontSize: '2rem', color: 'red', opacity: 0.8 }}>
+            {error}
+          </div>
+        ) : isLoading ? (
+          <div style={{ fontSize: '2rem', opacity: 0.5 }}>
+            Loading lyrics...
+          </div>
+        ) : currentSection ? (
           <div style={{ 
             fontSize: '4rem',
             fontWeight: '600',
@@ -55,7 +85,7 @@ const PresentationPage = () => {
           </div>
         ) : (
           <div style={{ fontSize: '2rem', opacity: 0.5 }}>
-            Loading lyrics...
+            No lyrics found
           </div>
         )}
       </div>
