@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-interface Section {
+type Section = {
   id: number;
   content: string;
 }
@@ -28,9 +28,14 @@ const PresentationPage = () => {
         }
         
         const data = await response.json();
+        if (!data) {
+          throw new Error('No lyrics found');
+        }
+        
         setCurrentSection(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
+        setCurrentSection(null);
       } finally {
         setIsLoading(false);
       }
