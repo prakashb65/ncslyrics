@@ -12,8 +12,9 @@ const PresentationPage = () => {
   const { id } = router.query;
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
 
+  // Web-specific initialization
   useEffect(() => {
-    // Add any web-specific initialization here if needed
+    // Add web functionality here if needed
   }, []);
 
   return (
@@ -54,7 +55,7 @@ const PresentationPage = () => {
           </div>
         ) : (
           <div style={{ fontSize: '2rem', opacity: 0.5 }}>
-            Waiting for lyrics...
+            Loading lyrics...
           </div>
         )}
       </div>
