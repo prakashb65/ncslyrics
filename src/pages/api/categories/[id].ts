@@ -1,31 +1,73 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import kv from '@/lib/kv';
+import { kv } from '@/lib/kv';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+type ErrorResponse = {
+  error: string;
+  details?: any;
+};
+
+type SuccessResponse = {
+  message?: string;
+  id?: string;
+  name?: string;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<SuccessResponse | ErrorResponse>
+) {
   const { id } = req.query;
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ 
+      error: 'Invalid input',
+      details: 'ID is required and must be a string'
+    });
+  }
 
   switch (req.method) {
     case 'DELETE':
       try {
-        await kv.hdel('categories', id as string);
-        res.status(200).json({ message: 'Category deleted successfully' });
+        const exists = await kv.hexists('categories', id);
+        if (!exists) {
+          return res.status(404).json({ 
+            error: 'Not found',
+            details: 'Category not found'
+          });
+        }
+
+        await kv.hdel('categories', id);
+        return res.status(200).json({ message: 'Category deleted successfully' });
       } catch (error) {
-        res.status(500).json({ error: 'Error deleting category' });
+        console.error('Error deleting category:', error);
+        return res.status(500).json({ 
+          error: 'Error deleting category',
+          details: error instanceof Error ? error.message : String(error)
+        });
       }
-      break;
 
     case 'PUT':
       try {
         const { name } = req.body;
-        await kv.hset('categories', { [id as string]: name });
-        res.status(200).json({ id, name });
+        if (!name || typeof name !== 'string') {
+          return res.status(400).json({ 
+            error: 'Invalid input',
+            details: 'Category name is required and must be a string'
+          });
+        }
+
+        await kv.hset('categories', { [id]: name });
+        return res.status(200).json({ id, name });
       } catch (error) {
-        res.status(500).json({ error: 'Error updating category' });
+        console.error('Error updating category:', error);
+        return res.status(500).json({ 
+          error: 'Error updating category',
+          details: error instanceof Error ? error.message : String(error)
+        });
       }
-      break;
 
     default:
       res.setHeader('Allow', ['DELETE', 'PUT']);
-      res.status(405).end(`Method ${req.method} Not Allowed`);
+      return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 } 

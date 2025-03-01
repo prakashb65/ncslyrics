@@ -1,52 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { FaFolder } from 'react-icons/fa';
-
-// Example category/song data structure (replace with your actual data)
-interface Category {
-  id: string;
-  name: string;
-  songs: Song[];
-}
 
 interface Song {
   id: string;
   title: string;
-  author: string;
+  artist: string;
+  category?: string;
+  lyrics: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 export default function PlaylistsPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
 
-  // Example categories (replace with your actual data)
-  const categories: Category[] = [
-    {
-      id: '1',
-      name: 'Christmas Songs',
-      songs: [
-        { id: '1', title: 'Silent Night', author: 'Franz Xaver Gruber' },
-        { id: '2', title: 'Joy to the World', author: 'Isaac Watts' },
-      ]
-    },
-    {
-      id: '2',
-      name: 'Gospel Songs',
-      songs: [
-        { id: '3', title: 'Amazing Grace', author: 'John Newton' },
-        { id: '4', title: 'How Great Thou Art', author: 'Carl Boberg' },
-      ]
-    },
-    {
-      id: '3',
-      name: 'Praise & Worship',
-      songs: [
-        { id: '5', title: 'How Great Is Our God', author: 'Chris Tomlin' },
-        { id: '6', title: 'Blessed Be Your Name', author: 'Matt Redman' },
-      ]
-    },
-  ];
+  useEffect(() => {
+    fetchCategories();
+    fetchSongs();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchSongs = async () => {
+    try {
+      const response = await fetch('/api/lyrics');
+      if (!response.ok) throw new Error('Failed to fetch lyrics');
+      const data = await response.json();
+      setSongs(data.items || []);
+    } catch (error) {
+      console.error('Error fetching lyrics:', error);
+    }
+  };
 
   const handleCategorySelect = (categoryId: string) => {
     if (isNavigating) return;
@@ -61,6 +62,11 @@ export default function PlaylistsPage() {
     router.push(`/lyrics/${songId}`);
   };
 
+  // Get songs for a specific category
+  const getSongsForCategory = (categoryName: string) => {
+    return songs.filter(song => song.category === categoryName);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       {!selectedCategory ? (
@@ -68,24 +74,27 @@ export default function PlaylistsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Playlists</h1>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategorySelect(category.id)}
-                className="group"
-                disabled={isNavigating}
-              >
-                <div className="aspect-square bg-blue-100 rounded-2xl p-6 flex flex-col items-center justify-center transition-transform transform group-hover:scale-105 group-hover:shadow-lg">
-                  <FaFolder className="text-blue-500 text-6xl mb-4" />
-                  <span className="text-gray-700 font-medium text-center">
-                    {category.name}
-                  </span>
-                  <span className="text-gray-500 text-sm mt-2">
-                    {category.songs.length} songs
-                  </span>
-                </div>
-              </button>
-            ))}
+            {categories.map((category) => {
+              const categorySongs = getSongsForCategory(category.name);
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category.id)}
+                  className="group"
+                  disabled={isNavigating}
+                >
+                  <div className="aspect-square bg-blue-100 rounded-2xl p-6 flex flex-col items-center justify-center transition-transform transform group-hover:scale-105 group-hover:shadow-lg">
+                    <FaFolder className="text-blue-500 text-6xl mb-4" />
+                    <span className="text-gray-700 font-medium text-center">
+                      {category.name}
+                    </span>
+                    <span className="text-gray-500 text-sm mt-2">
+                      {categorySongs.length} songs
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -105,9 +114,12 @@ export default function PlaylistsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories
-              .find(c => c.id === selectedCategory)
-              ?.songs.map((song) => (
+            {(() => {
+              const category = categories.find(c => c.id === selectedCategory);
+              if (!category) return null;
+              
+              const categorySongs = getSongsForCategory(category.name);
+              return categorySongs.map((song) => (
                 <div
                   key={song.id}
                   onClick={() => handleSongSelect(song.id)}
@@ -115,14 +127,12 @@ export default function PlaylistsPage() {
                     isNavigating ? 'pointer-events-none' : ''
                   }`}
                 >
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800 text-center">
                     {song.title}
                   </h3>
-                  <p className="text-gray-500">
-                    {song.author}
-                  </p>
                 </div>
-              ))}
+              ));
+            })()}
           </div>
         </div>
       )}

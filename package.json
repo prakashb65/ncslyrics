@@ -18,6 +18,8 @@
     "@heroicons/react": "^2.2.0",
     "@upstash/redis": "^1.34.4",
     "@vercel/kv": "^3.0.0",
+    "auth0": "^4.18.0",
+    "critters": "^0.0.23",
     "framer-motion": "^10.18.0",
     "mysql2": "^3.12.0",
     "next": "14.0.0",

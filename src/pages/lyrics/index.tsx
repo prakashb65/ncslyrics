@@ -1,34 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { FaSearch, FaPrint, FaShare, FaHeart } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
 
-// Example song data structure
-interface Song {
-  id: number;
+interface Lyric {
+  id: string;
   title: string;
-  firstLetter: string;
+  category?: string;
 }
 
 export default function LyricsPage() {
   const router = useRouter();
   const [selectedLetter, setSelectedLetter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [lyrics, setLyrics] = useState<Lyric[]>([]);
 
-  // Example songs list (you'll replace this with your actual data)
-  const songs: Song[] = [
-    { id: 1, title: 'Amazing Grace', firstLetter: 'A' },
-    { id: 2, title: 'Be Thou My Vision', firstLetter: 'B' },
-    { id: 3, title: 'How Great Is Our God', firstLetter: 'H' },
-    // Add more songs as needed
-  ];
+  useEffect(() => {
+    fetchLyrics();
+  }, []);
+
+  const fetchLyrics = async () => {
+    try {
+      const response = await fetch('/api/lyrics');
+      if (!response.ok) throw new Error('Failed to fetch lyrics');
+      const data = await response.json();
+      setLyrics(data.items || []);
+    } catch (error) {
+      console.error('Error fetching lyrics:', error);
+    }
+  };
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-  const filteredSongs = songs.filter(song => {
-    const matchesLetter = selectedLetter === 'all' || song.firstLetter === selectedLetter;
-    const matchesSearch = song.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesLetter && matchesSearch;
-  });
+  const filteredLyrics = lyrics
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .filter(lyric => {
+      const firstLetter = lyric.title.charAt(0).toUpperCase();
+      const matchesLetter = selectedLetter === 'all' || firstLetter === selectedLetter;
+      const matchesSearch = lyric.title.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesLetter && matchesSearch;
+    });
 
   return (
     <div className="p-8">
@@ -69,15 +79,16 @@ export default function LyricsPage() {
         ))}
       </div>
 
-      {/* Songs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredSongs.map((song) => (
+      {/* Songs List */}
+      <div className="grid grid-flow-row-dense auto-rows-auto grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredLyrics.map((lyric, index) => (
           <div
-            key={song.id}
-            onClick={() => router.push(`/lyrics/${song.id}`)}
-            className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md cursor-pointer"
+            key={lyric.id}
+            onClick={() => router.push(`/lyrics/${lyric.id}`)}
+            className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md cursor-pointer transition-shadow"
+            style={{ order: index }}
           >
-            <h2 className="text-xl font-semibold">{song.title}</h2>
+            <h2 className="text-xl font-semibold text-left pl-2">{lyric.title}</h2>
           </div>
         ))}
       </div>
